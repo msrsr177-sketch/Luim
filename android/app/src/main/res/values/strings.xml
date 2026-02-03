@@ -1,0 +1,7 @@
+
+<resources>
+    <string name="app_name">Lumina Glass UI</string>
+    <string name="title_activity_main">Lumina Glass UI</string>
+    <string name="package_name">com.lumina.glassui</string>
+    <string name="custom_url_scheme">com.lumina.glassui</string>
+</resources>

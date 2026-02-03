@@ -1,0 +1,8 @@
+{
+  "name": "Lumina Glass UI",
+  "description": "A premium, futuristic mobile interface featuring deep glassmorphism, elegant dark tones, and smooth frosted glass effects.",
+  "requestFramePermissions": [
+    "camera",
+    "microphone"
+  ]
+}
