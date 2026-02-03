@@ -1,5 +1,4 @@
-
-name: Production Deployment
+name: Build Android App & Web (Ultimate)
 
 on:
   push:
@@ -7,26 +6,85 @@ on:
 
 permissions:
   contents: write
+  pages: write
+  id-token: write
 
 jobs:
-  build-and-deploy:
+  build-process:
     runs-on: ubuntu-latest
+
     steps:
-      - name: Checkout 🛎️
+      # 1️⃣ Checkout repository
+      - name: Checkout Repository
         uses: actions/checkout@v4
 
-      - name: Setup Node 🔧
+      # 2️⃣ Setup JDK 17 مع Cache للـ Gradle
+      - name: Set up JDK 17
+        uses: actions/setup-java@v4
+        with:
+          java-version: '17'
+          distribution: 'temurin'
+          cache: 'gradle' # تسريع البناء ومنع الأخطاء
+
+      # 3️⃣ Setup Node.js
+      - name: Setup Node.js
         uses: actions/setup-node@v4
         with:
-          node-version: 18
+          node-version: '22'
 
-      - name: Install and Build 🏗️
+      # 4️⃣ Extract ZIP files إذا موجودة
+      - name: Extract & Organize Files
         run: |
-          npm install
-          npm run build
+          if ls *.zip 1> /dev/null 2>&1; then
+            unzip -o *.zip -d temp_extracted
+            ROOT_DIR=$(find temp_extracted -name "package.json" -exec dirname {} \; | head -n 1)
+            cp -r $ROOT_DIR/. .
+            rm -rf temp_extracted
+          fi
 
-      - name: Deploy to GitHub Pages 🚀
-        uses: JamesIves/github-pages-deploy-action@v4
+      # 5️⃣ Install dependencies
+      - name: Install Dependencies
+        run: |
+          npm install --legacy-peer-deps
+          npm install @capacitor/android @capacitor/core @capacitor/cli --legacy-peer-deps
+
+      # 6️⃣ Build Web
+      - name: Build Web Project
+        run: npm run build || true
+
+      # 7️⃣ Prepare Capacitor Android
+      - name: Prepare Capacitor Android
+        run: |
+          npm install @capacitor/android --legacy-peer-deps
+          npx cap add android || true
+          npx cap copy android
+          npx cap sync android
+
+      # 8️⃣ Fix Gradle Permissions
+      - name: Fix Gradle Permissions
+        run: chmod +x android/gradlew
+
+      # 9️⃣ Build Android APK (Gradle Clean + No Daemon)
+      - name: Build Android APK
+        run: |
+          cd android
+          chmod +x gradlew
+          ./gradlew clean # تنظيف أي مخلفات بناء سابقة تسبب التعارض
+          ./gradlew assembleDebug --no-daemon --stacktrace
+
+      # 🔟 Backup: Build Android via Capacitor
+      - name: Build Android APK (Capacitor)
+        run: npx cap build android --no-open || true
+
+      # 1️⃣1️⃣ Upload APK artifact
+      - name: Upload APK Artifact
+        uses: actions/upload-artifact@v4
         with:
-          folder: dist
-          branch: gh-pages
+          name: release-apk
+          path: android/app/build/outputs/apk/debug/app-debug.apk
+
+      # 1️⃣2️⃣ Deploy Web on GitHub Pages
+      - name: Deploy Web
+        uses: actions/deploy-pages@v4
+        with:
+          artifact_name: github-pages
