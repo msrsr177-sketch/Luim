@@ -18,13 +18,13 @@ jobs:
       - name: Checkout Repository
         uses: actions/checkout@v4
 
-      # 2️⃣ Setup JDK 17 مع Cache للـ Gradle
+      # 2️⃣ Setup JDK 17 (Gradle Cache)
       - name: Set up JDK 17
         uses: actions/setup-java@v4
         with:
           java-version: '17'
           distribution: 'temurin'
-          cache: 'gradle' # تسريع البناء ومنع الأخطاء
+          cache: gradle
 
       # 3️⃣ Setup Node.js
       - name: Setup Node.js
@@ -32,7 +32,7 @@ jobs:
         with:
           node-version: '22'
 
-      # 4️⃣ Extract ZIP files إذا موجودة
+      # 4️⃣ Extract ZIP if exists
       - name: Extract & Organize Files
         run: |
           if ls *.zip 1> /dev/null 2>&1; then
@@ -46,44 +46,45 @@ jobs:
       - name: Install Dependencies
         run: |
           npm install --legacy-peer-deps
-          npm install @capacitor/android @capacitor/core @capacitor/cli --legacy-peer-deps
+          npm install @capacitor/core @capacitor/cli @capacitor/android --legacy-peer-deps
 
-      # 6️⃣ Build Web
+      # 6️⃣ Initial Web Build (required)
       - name: Build Web Project
-        run: npm run build || true
+        run: npm run build
 
       # 7️⃣ Prepare Capacitor Android
       - name: Prepare Capacitor Android
         run: |
-          npm install @capacitor/android --legacy-peer-deps
           npx cap add android || true
           npx cap copy android
-          npx cap sync android
 
       # 8️⃣ Fix Gradle Permissions
       - name: Fix Gradle Permissions
         run: chmod +x android/gradlew
 
-      # 9️⃣ Build Android APK (Gradle Clean + No Daemon)
+      # 9️⃣ Build Android APK (Clean + No Daemon)
       - name: Build Android APK
         run: |
           cd android
-          chmod +x gradlew
-          ./gradlew clean # تنظيف أي مخلفات بناء سابقة تسبب التعارض
+          ./gradlew clean
           ./gradlew assembleDebug --no-daemon --stacktrace
 
-      # 🔟 Backup: Build Android via Capacitor
-      - name: Build Android APK (Capacitor)
-        run: npx cap build android --no-open || true
+      # 🔟 FINAL Web Build (Ensure dist exists)
+      - name: Build Web Project (Final)
+        run: npm run build
 
-      # 1️⃣1️⃣ Upload APK artifact
+      # 1️⃣1️⃣ Sync Capacitor (Web → Android)
+      - name: Sync Capacitor
+        run: npx cap sync android
+
+      # 1️⃣2️⃣ Upload APK artifact
       - name: Upload APK Artifact
         uses: actions/upload-artifact@v4
         with:
-          name: release-apk
+          name: debug-apk
           path: android/app/build/outputs/apk/debug/app-debug.apk
 
-      # 1️⃣2️⃣ Deploy Web on GitHub Pages
+      # 1️⃣3️⃣ Deploy Web to GitHub Pages
       - name: Deploy Web
         uses: actions/deploy-pages@v4
         with:
