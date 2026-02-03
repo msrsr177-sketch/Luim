@@ -42,41 +42,41 @@ jobs:
             rm -rf temp_extracted
           fi
 
-      # 5️⃣ Install Node Dependencies
+      # 5️⃣ Install Node & Capacitor Dependencies
       - name: Install Dependencies
         run: |
           npm install --legacy-peer-deps
           npm install @capacitor/core @capacitor/cli @capacitor/android --legacy-peer-deps
 
-      # 6️⃣ Install Terser (Required before build)
+      # 6️⃣ Install Terser
       - name: Install Terser
         run: npm install terser --save-dev
 
-      # 7️⃣ Build Web Project (Generate dist)
+      # 7️⃣ Build Web Project
       - name: Build Web Project
         run: npm run build
 
-      # 8️⃣ Prepare Capacitor Android
+      # 8️⃣ Ensure Android Platform Exists
       - name: Prepare Capacitor Android
         run: |
           npx cap add android || true
           npx cap copy android
 
-      # 9️⃣ Fix Gradle Permissions (Safe)
-      - name: Fix Gradle Permissions
+      # 9️⃣ Capacitor Sync (Web → Android)
+      - name: Capacitor Sync (Initial)
+        run: npx cap sync android
+
+      # 🔟 Fix Gradle Permissions (basic)
+      - name: Fix Gradle Permissions (Basic)
         run: chmod +x android/gradlew
         continue-on-error: true
 
-      # 🔟 Build Android APK (Clean + Stable)
-      - name: Build Android APK
+      # 1️⃣1️⃣ Build Android APK (Initial)
+      - name: Build Android APK (Initial)
         run: |
           cd android
           ./gradlew clean
-          ./gradlew assembleDebug --no-daemon --stacktrace
-
-      # 1️⃣1️⃣ Sync Capacitor (Web → Android)
-      - name: Sync Capacitor
-        run: npx cap sync android
+          ./gradlew assembleDebug --no-daemon
 
       # 1️⃣2️⃣ Upload APK Artifact
       - name: Upload APK Artifact
@@ -90,3 +90,23 @@ jobs:
         uses: actions/deploy-pages@v4
         with:
           artifact_name: github-pages
+
+      # 1️⃣4️⃣ Capacitor Sync (User Requested – Final)
+      - name: Capacitor Sync
+        run: npx cap sync android
+
+      # 1️⃣5️⃣ Fix Gradle Permissions (Checked)
+      - name: Fix Gradle Permissions (Checked)
+        run: |
+          if [ -d "android" ]; then
+            chmod +x android/gradlew
+          else
+            echo "مجلد الأندرويد غير موجود!"
+            exit 1
+          fi
+
+      # 1️⃣6️⃣ Build Android APK (Final – User Command)
+      - name: Build Android APK (Final)
+        run: |
+          cd android
+          ./gradlew assembleDebug
