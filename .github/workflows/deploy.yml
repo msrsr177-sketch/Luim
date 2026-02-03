@@ -14,7 +14,7 @@ jobs:
     runs-on: ubuntu-latest
 
     steps:
-      # 1️⃣ Checkout repository
+      # 1️⃣ Checkout Repository
       - name: Checkout Repository
         uses: actions/checkout@v4
 
@@ -32,7 +32,7 @@ jobs:
         with:
           node-version: '22'
 
-      # 4️⃣ Extract ZIP if exists
+      # 4️⃣ Extract ZIP files if exist
       - name: Extract & Organize Files
         run: |
           if ls *.zip 1> /dev/null 2>&1; then
@@ -42,7 +42,7 @@ jobs:
             rm -rf temp_extracted
           fi
 
-      # 5️⃣ Install dependencies
+      # 5️⃣ Install Node Dependencies
       - name: Install Dependencies
         run: |
           npm install --legacy-peer-deps
@@ -52,7 +52,7 @@ jobs:
       - name: Install Terser
         run: npm install terser --save-dev
 
-      # 7️⃣ Build Web Project
+      # 7️⃣ Build Web Project (Generate dist)
       - name: Build Web Project
         run: npm run build
 
@@ -62,11 +62,12 @@ jobs:
           npx cap add android || true
           npx cap copy android
 
-      # 9️⃣ Fix Gradle Permissions
+      # 9️⃣ Fix Gradle Permissions (Safe)
       - name: Fix Gradle Permissions
         run: chmod +x android/gradlew
+        continue-on-error: true
 
-      # 🔟 Build Android APK (Clean + No Daemon)
+      # 🔟 Build Android APK (Clean + Stable)
       - name: Build Android APK
         run: |
           cd android
@@ -77,7 +78,7 @@ jobs:
       - name: Sync Capacitor
         run: npx cap sync android
 
-      # 1️⃣2️⃣ Upload APK artifact
+      # 1️⃣2️⃣ Upload APK Artifact
       - name: Upload APK Artifact
         uses: actions/upload-artifact@v4
         with:
