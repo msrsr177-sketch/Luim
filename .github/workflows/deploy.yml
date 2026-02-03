@@ -48,30 +48,30 @@ jobs:
           npm install --legacy-peer-deps
           npm install @capacitor/core @capacitor/cli @capacitor/android --legacy-peer-deps
 
-      # 6️⃣ Initial Web Build (required)
+      # 6️⃣ Install Terser (Required before build)
+      - name: Install Terser
+        run: npm install terser --save-dev
+
+      # 7️⃣ Build Web Project
       - name: Build Web Project
         run: npm run build
 
-      # 7️⃣ Prepare Capacitor Android
+      # 8️⃣ Prepare Capacitor Android
       - name: Prepare Capacitor Android
         run: |
           npx cap add android || true
           npx cap copy android
 
-      # 8️⃣ Fix Gradle Permissions
+      # 9️⃣ Fix Gradle Permissions
       - name: Fix Gradle Permissions
         run: chmod +x android/gradlew
 
-      # 9️⃣ Build Android APK (Clean + No Daemon)
+      # 🔟 Build Android APK (Clean + No Daemon)
       - name: Build Android APK
         run: |
           cd android
           ./gradlew clean
           ./gradlew assembleDebug --no-daemon --stacktrace
-
-      # 🔟 FINAL Web Build (Ensure dist exists)
-      - name: Build Web Project (Final)
-        run: npm run build
 
       # 1️⃣1️⃣ Sync Capacitor (Web → Android)
       - name: Sync Capacitor
